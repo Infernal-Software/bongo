@@ -10,6 +10,7 @@ import (
 type Config struct {
 	ConnectionString string
 	Database         string
+	ValidateIds		 bool
 	DialInfo         *mgo.DialInfo
 }
 
@@ -78,6 +79,7 @@ func (m *Connection) CollectionFromDatabase(name string, database string) *Colle
 		Context:    m.Context,
 		Database:   database,
 		Name:       name,
+		validateIds: m.Config.ValidateIds,
 	}
 }
 

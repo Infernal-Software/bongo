@@ -67,6 +67,7 @@ func (v *ValidationError) Error() string {
 }
 
 type Collection struct {
+	validateIds bool
 	Name       string
 	Database   string
 	Context    *Context
@@ -115,7 +116,11 @@ func (c *Collection) PreSave(doc Document) error {
 }
 
 func (c *Collection) Save(doc Document) error {
-	var err error
+	var (
+		err error
+		id interface{}
+	)
+
 	sess := c.Connection.Session.Clone()
 	defer sess.Close()
 
@@ -146,16 +151,23 @@ func (c *Collection) Save(doc Document) error {
 
 	go CascadeSave(c, doc)
 
-	id := doc.GetId()
+	// I wanna use my own id system
+	if c.validateIds {
+		_id := doc.GetId()
 
-	if !isNew && !id.Valid() {
-		return errors.New("New tracker says this document isn't new but there is no valid Id field")
-	}
+		if !isNew && !_id.Valid() {
+			return errors.New("New tracker says this document isn't new but there is no valid Id field")
+		}
 
-	if isNew && !id.Valid() {
-		// Generate an Id
-		id = bson.NewObjectId()
-		doc.SetId(id)
+		if isNew && !_id.Valid() {
+			// Generate an Id
+			_id = bson.NewObjectId()
+			doc.SetId(_id)
+		}
+
+		id = _id
+	} else {
+		id = string(doc.GetId())
 	}
 
 	_, err = col.UpsertId(id, doc)
